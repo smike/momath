@@ -1,3 +1,5 @@
+// COPYRIGHT 2013 MOMATH.ORG
+
 # README for a newly created project.
 
 There are a couple of things you should do first, before you can use all of Git's power:
