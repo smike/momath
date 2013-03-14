@@ -4,25 +4,29 @@
  */
 
 var http = require('http')
+  , querystring = require('querystring')
   , xml2json = require('xml2json');
 
-var API_HOST = "api.momath.org";
-var API_BASE_PATH = "/api/v1/";
-var API_KEY = "2d6e7269-f701-4ae7-8494-afa25808f6ec";
+var API_HOST = 'api.momath.org';
+var API_BASE_PATH = '/api/v1/';
+var API_KEY = '2d6e7269-f701-4ae7-8494-afa25808f6ec';
 
-var CONTENT_SVC_PATH = API_BASE_PATH + "content.svc/";
+var CONTENT_SVC_PATH = API_BASE_PATH + 'content.svc/';
 
-var _CreateMethodPath = function(svcPath, method, optArgs) {
-  optArgs = optArgs || [];
-  if (optArgs.length > 0) {
+var _CreateMethodPath = function(svcPath, method, args, queryArgs) {
+  if (args.length > 0) {
     // We want a slash between the method and args if they exist.
-    optArgs = [""].concat(optArgs);
+    args = [""].concat(args);
   }
-  return svcPath + method + optArgs.join("/") + "?tok=" + API_KEY;
+
+  queryArgs.tok = API_KEY;
+
+  return svcPath + method + args.join('/') + '?' +
+      querystring.stringify(queryArgs);
 };
 
-var CreateContentSvcPath = function(method, optArgs) {
-  return _CreateMethodPath(CONTENT_SVC_PATH, method, optArgs);
+var CreateContentSvcPath = function(method, args, queryArgs) {
+  return _CreateMethodPath(CONTENT_SVC_PATH, method, args, queryArgs);
 };
 
 var _PushIfDefined = function(a, value) {
@@ -35,24 +39,27 @@ var _SendRequest = function(path, body, responseCallback) {
     path: path,
     method: body ? 'POST' : 'GET'
   };
+  console.log('Sending request: ' + options.method + " http://" +
+              options.hostname + options.path);
   var req = http.request(options, function(res) {
-    var response_data = '';
+    var chunk_buffers = [];
     console.log('STATUS: ' + res.statusCode);
     console.log('HEADERS: ' + JSON.stringify(res.headers));
-    res.setEncoding('utf8');
+
     res.on('data', function (chunk) {
-      response_data += chunk;
+      console.log('Got Chunk: length=' + chunk.length);
+      chunk_buffers.push(chunk);
     });
     res.on('end', function () {
-      console.log('Got all data: ' + response_data);
-      responseCallback(response_data);
+      var buffer = Buffer.concat(chunk_buffers);
+      console.log('Got all data: length=' + buffer.length);
+      responseCallback(res.headers['content-type'], buffer);
     });
   });
 
   req.on('error', function(e) {
     console.log('problem with request: ' + e.message);
   });
-
   // write data to request body
   if (body) {
     console.log('SEND_BODY: ' + body);
@@ -62,18 +69,23 @@ var _SendRequest = function(path, body, responseCallback) {
 };
 
 exports.content = function(request, response){
-  console.log("method: " + request.params.method);
-  console.log(request.params);
-
   var args = [];
   _PushIfDefined(args, request.params.arg1);
   _PushIfDefined(args, request.params.arg2);
   _PushIfDefined(args, request.params.arg3);
-  var path = CreateContentSvcPath(request.params.method, args);
+  var path = CreateContentSvcPath(request.params.method, args, request.query);
 
-  _SendRequest(path, xml2json.toXml(request.body), function (response_xml) {
-    var response_json = xml2json.toJson(response_xml);
-    response.write(response_json);
-    response.end();
+  var body_xml = xml2json.toXml(request.body);
+  _SendRequest(path, body_xml, function (content_type, response_buffer) {
+    if (content_type.indexOf("application/xml") != -1) {
+      var response_json = xml2json.toJson(response_buffer.toString());
+      response.setHeader("content-type", "application/json");
+      response.write(response_json);
+      response.end();
+    } else {
+      response.setHeader("content-type", content_type);
+      response.write(response_buffer);
+      response.end();
+    }
   });
 };
