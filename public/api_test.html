@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>API Test</title>
+        <script>
+          var API_BASE = "/api/";
+          
+          var api_frame;
+          var form;
+          
+          window.onload = function() {
+            api_frame = document.getElementById('api_frame');
+            form = document.getElementById('request_form');
+          };
+          
+          function applyFormData() {
+            var url = API_BASE + form.sub_url.value;
+            var body = form.body.value;
+            
+            console.log('url: ' + url);
+            console.log('body: ' + body);
+            
+            api_frame.src = url;
+          }
+        </script>
+    </head>
+    <body>
+      <form id="request_form" action="javascript:applyFormData()">
+        URL: /api/<input name="sub_url" type="text" size="100"/><br/>
+        Body: <textarea cols="100" rows="10" name="body"></textarea>
+      </form>
+      <hr/>
+      <iframe id="api_frame" width="100%" height="600" src="/api/"/>
+    </body>
+</html>
