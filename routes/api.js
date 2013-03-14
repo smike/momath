@@ -13,6 +13,8 @@ var API_KEY = '2d6e7269-f701-4ae7-8494-afa25808f6ec';
 
 var CONTENT_SVC_PATH = API_BASE_PATH + 'content.svc/';
 
+var _DEBUG_JSON_POST_KEY = '__DEBUG_JSON__';
+
 var _CreateMethodPath = function(svcPath, method, args, queryArgs) {
   if (args.length > 0) {
     // We want a slash between the method and args if they exist.
@@ -60,6 +62,7 @@ var _SendRequest = function(path, body, responseCallback) {
   req.on('error', function(e) {
     console.log('problem with request: ' + e.message);
   });
+
   // write data to request body
   if (body) {
     console.log('SEND_BODY: ' + body);
@@ -75,8 +78,18 @@ exports.content = function(request, response){
   _PushIfDefined(args, request.params.arg3);
   var path = CreateContentSvcPath(request.params.method, args, request.query);
 
-  var body_xml = xml2json.toXml(request.body);
-  _SendRequest(path, body_xml, function (content_type, response_buffer) {
+  var json = request.body;
+  if (json.hasOwnProperty(_DEBUG_JSON_POST_KEY)) {
+    // We got a POST from a debug web form. Parse out the juicy bits as json.
+    var json_string = json[_DEBUG_JSON_POST_KEY];
+    console.log('__DEBUG_JSON__: ' + json_string);
+    // In case json_string is empty (which can't be parsed), make it into an
+    // empty object.
+    json = JSON.parse(json_string || '{}');
+  }
+
+  var xml = xml2json.toXml(json);
+  _SendRequest(path, xml, function (content_type, response_buffer) {
     if (content_type.indexOf("application/xml") != -1) {
       var response_json = xml2json.toJson(response_buffer.toString());
       response.setHeader("content-type", "application/json");

@@ -2,32 +2,37 @@
 <html>
     <head>
         <title>API Test</title>
+        <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
         <script>
           var API_BASE = "/api/";
-          
+
           var api_frame;
           var form;
-          
+          var sub_url_input, json_input;
+
           window.onload = function() {
             api_frame = document.getElementById('api_frame');
             form = document.getElementById('request_form');
+            sub_url_input = document.getElementById('sub_url_input');
+            json_input = document.getElementById('json_input');
           };
-          
+
           function applyFormData() {
-            var url = API_BASE + form.sub_url.value;
-            var body = form.body.value;
-            
+            var url = API_BASE + sub_url_input.value;
+            var body = json_input.value;
+
             console.log('url: ' + url);
             console.log('body: ' + body);
-            
-            api_frame.src = url;
+
+            form.action = url;
+            form.submit();
           }
         </script>
     </head>
     <body>
-      <form id="request_form" action="javascript:applyFormData()">
-        URL: /api/<input name="sub_url" type="text" size="100"/><br/>
-        Body: <textarea cols="100" rows="10" name="body"></textarea>
+      <form id="request_form" method="POST" target="api_frame" onsubmit="applyFormData()">
+        URL: /api/<input id="sub_url_input" type="text" size="100"/><br/>
+        Body: <textarea id="json_input" cols="100" rows="10" name="__DEBUG_JSON__"></textarea>
       </form>
       <hr/>
       <iframe id="api_frame" width="100%" height="600" src="/api/"/>
