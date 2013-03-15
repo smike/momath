@@ -92,15 +92,18 @@ exports.content = function(request, response) {
 
   var xml = xml2json.toXml(json);
   _SendRequest(path, xml, function (content_type, response_buffer) {
-    if (content_type.indexOf('application/xml') != -1) {
-      var response_json = xml2json.toJson(response_buffer.toString());
-      response.setHeader('Content-Type', 'application/json');
-      response.write(response_json);
-      response.end();
-    } else {
-      response.setHeader('Content-Type', content_type);
-      response.write(response_buffer);
-      response.end();
+    var response_body = response_buffer;
+    if (content_type) {
+      if (content_type.indexOf('application/xml') != -1) {
+        response_body = xml2json.toJson(response_buffer.toString());
+        response.setHeader('Content-Type', 'application/json');
+      } else {
+        response.setHeader('Content-Type', content_type);
+      }
     }
+
+    response.setHeader('Content-Length', response_body.length);
+    response.write(response_body);
+    response.end();
   });
 };
