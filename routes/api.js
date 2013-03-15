@@ -18,7 +18,7 @@ var _DEBUG_JSON_POST_KEY = '__DEBUG_JSON__';
 var _CreateMethodPath = function(svcPath, method, args, queryArgs) {
   if (args.length > 0) {
     // We want a slash between the method and args if they exist.
-    args = [""].concat(args);
+    args = [''].concat(args);
   }
 
   queryArgs.tok = API_KEY;
@@ -41,7 +41,7 @@ var _SendRequest = function(path, body, responseCallback) {
     path: path,
     method: body ? 'POST' : 'GET'
   };
-  console.log('Sending request: ' + options.method + " http://" +
+  console.log('Sending request: ' + options.method + ' http://' +
               options.hostname + options.path);
   var req = http.request(options, function(res) {
     var chunk_buffers = [];
@@ -74,7 +74,6 @@ var _SendRequest = function(path, body, responseCallback) {
 };
 
 exports.content = function(request, response) {
-  console.log(request);
   var args = [];
   _PushIfDefined(args, request.params.arg1);
   _PushIfDefined(args, request.params.arg2);
@@ -93,13 +92,13 @@ exports.content = function(request, response) {
 
   var xml = xml2json.toXml(json);
   _SendRequest(path, xml, function (content_type, response_buffer) {
-    if (content_type.indexOf("application/xml") != -1) {
+    if (content_type.indexOf('application/xml') != -1) {
       var response_json = xml2json.toJson(response_buffer.toString());
-      response.setHeader("content-type", "application/json");
+      response.setHeader('Content-Type', 'application/json');
       response.write(response_json);
       response.end();
     } else {
-      response.setHeader("content-type", content_type);
+      response.setHeader('Content-Type', content_type);
       response.write(response_buffer);
       response.end();
     }
