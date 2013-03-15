@@ -66,12 +66,15 @@ var _SendRequest = function(path, body, responseCallback) {
   // write data to request body
   if (body) {
     console.log('SEND_BODY: ' + body);
+    req.setHeader('Content-Length', body.length);
+    req.setHeader('Content-Type', 'application/xml');
     req.write(body);
   }
   req.end();
 };
 
-exports.content = function(request, response){
+exports.content = function(request, response) {
+  console.log(request);
   var args = [];
   _PushIfDefined(args, request.params.arg1);
   _PushIfDefined(args, request.params.arg2);
