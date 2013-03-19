@@ -10,6 +10,7 @@
     "url": "git://github.com/smike/momath.git"
   },
   "dependencies": {
+    "ejs" : ">=0.4.3",
     "express": "3.1.0",
     "jade": "*",
     "xml2json": "*"
