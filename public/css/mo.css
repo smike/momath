@@ -1,0 +1,70 @@
+
+html,
+body {
+  padding: 0;
+  margin: 0;
+}
+
+div#wrapper {
+}
+
+div#wrapper div.header {
+  background-color: #e9e9e9;
+  border-bottom: 3px solid #999;
+  margin-bottom: 8px;
+  overflow: auto;
+
+  position: fixed;
+  top: 0;
+  height: 48px;
+  width: 100%;
+}
+
+div#wrapper div.header div.inner {
+  margin: 8px 16px;
+}
+
+div#wrapper div.header div.logo {
+  float: left;
+  font-size: 25px;
+}
+
+div#wrapper div.header div.logo a {
+  text-decoration: none;
+  color: #666;
+}
+
+div#wrapper div.header div.nav {
+  float: right;
+  display: inline-block;
+}
+
+div#wrapper div.header div.nav a,
+div#wrapper div.header div.nav a:hover,
+div#wrapper div.header div.nav a:visited {
+  text-decoration: none;
+  font-size: 19px;
+  margin-left: 8px;
+  color: #333;
+}
+
+div#wrapper div.content-body {
+  margin-top: 48px;
+  padding: 16px;
+}
+
+div#wrapper div.footer {
+  border-top: 3px solid #999;
+  padding-top: 8px;
+  margin-top: 8px;
+  background-color: #e9e9e9;
+
+  position: fixed;
+  bottom: 0;
+  height: 32px;
+  width: 100%;
+}
+
+div#wrapper div.footer .inner {
+  margin: 4px 16px;
+}
