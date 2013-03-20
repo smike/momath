@@ -1,2 +1,8 @@
 node_modules/
+
+# cloud9 settings
 .c9revisions/
+
+# eclipse settings
+.settings/
+.project
