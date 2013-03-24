@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>MoMath Person Test</title>
+    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+    <style>
+      #log-container {
+        position: fixed;
+        right: 0;
+        top: 0;
+        width: 50%;
+        padding: 10px;
+        background-color: rgba(225, 225, 225, 0.5);
+        overflow: scroll;
+      }
+    </style>
+  </head>
+  <body>
+    <script>
+      var EXHIBIT_IDS = ['MTHN.OD', 'HUTR.OD', 'LOGE.OD', 'POPA.OD', 'TIFA.OD'];
+
+      function GetPersonId(email, callback) {
+        var lookup_json = {"Person": {}};
+        lookup_json["Person"]["Identity"] = email;
+        $.post('/api/content/lookup-person', lookup_json, function(person_json) {
+          var person_id = person_json.VisitInfo.PersonID;
+          log("person id for " + email + ": " + person_id);
+          callback(person_id);
+        });
+      }
+
+      function GetVisitIds(person_id, callback) {
+        log("looking up visits for " + person_id);
+        $.get('/api/content/person/' + person_id, {detail: true}, function(person_json) {
+          var vist_jsons = person_json.PersonInfo.VisitHistory.Visit;
+          var visit_ids = [];
+          for (var i in vist_jsons) {
+            visit_ids.push(vist_jsons[i].ID);
+          }
+          callback(visit_ids);
+        });
+      }
+
+      function GetBlobs(visit_id) {
+        var blobs = {};
+        for (var i in EXHIBIT_IDS) {
+          var exhibit_id = EXHIBIT_IDS[i];
+          var blob_ids = [];
+          $.ajax({
+            type: "GET",
+            url: '/api/content/exhibit-blob-list/' + exhibit_id + '/' + visit_id,
+            async: false,
+            success : function(blobs_json) {
+              var exhibit_bob_list = blobs_json.ExhibitBlobList;
+              var blobs = exhibit_bob_list["Blob"]; // May be missing if no blobs
+              if (blobs) {
+                for (var j in blobs) {
+                  var blob_id = blobs[j].ID;
+                  blob_ids.push(blob_id);
+                }
+                log('blobs found at ' + exhibit_bob_list.ExhibitID + ' for ' + visit_id + ': ' + blob_ids);
+              }
+            }
+          });
+
+          if (blob_ids.length > 0) {
+            blobs[exhibit_id] = blob_ids;
+          }
+        }
+
+        return blobs;
+      }
+
+      function RenderBlobs(visit_id, blobs) {
+        for (var exhibit_id in blobs) {
+          var blob_ids = blobs[exhibit_id];
+          if (exhibit_id == "MTHN.OD" && blob_ids.indexOf("poly_000.png") != -1) {
+            var url = "/api/content/exhibit-blob/" + exhibit_id + "/" + visit_id + "/poly_000.png?type=image/png";
+            log("Rendering " + url);
+            $("#output").append('<img src="' + url + '"/>');
+          }
+        }
+      }
+
+      function log(message) {
+        console.log(message);
+        $("#log").append(message + "<br>");
+      }
+
+      function loading(is_loading) {
+        $("#loading-indicator").css("display", is_loading ? "block" : "none");
+      }
+
+      function submit() {
+        loading(true);
+        var email = $("#email_input")[0].value;
+        GetPersonId(email, function(person_id) { GetVisitIds(person_id, function(visit_ids) {
+          log("person " + person_id + " has " + visit_ids.length + " visits.");
+          for (var i in visit_ids) {
+            var blobs = GetBlobs(visit_ids[i]);
+            RenderBlobs(visit_ids[i], blobs);
+            loading(false);
+          }
+        })});
+      }
+    </script>
+    <form action="javascript:submit();">
+      Email: <input id="email_input" value="whitney@momath.org"/>
+      <input type="submit" value="Submit"/>
+    </form>
+    <div id="log-container">Log:<pre id="log"></pre></div>
+    <div id="loading-indicator" style="display:none">Loading...</div>
+    <div id="output"></div>
+  </body>
+</html>

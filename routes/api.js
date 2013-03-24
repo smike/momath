@@ -1,4 +1,3 @@
-
 /*
  * forwarding to momath API server.
  */
@@ -87,7 +86,7 @@ exports.content = function(request, response) {
     console.log('__DEBUG_JSON__: ' + json_string);
     // In case json_string is empty (which can't be parsed), make it into an
     // empty object.
-    json = JSON.parse(json_string || '{}');
+    json = JSON.parse(json_string.trim() || '{}');
   }
 
   var xml = xml2json.toXml(json);
