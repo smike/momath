@@ -8,6 +8,7 @@
 </head>
 <body>
   <script src='/js/jquery.1.7.1.min.js'></script>
+  <script src='/js/jquery.dateFormat-1.0.js'></script>
   <script src='/js/json2.js'></script>
   <script src='/js/underscore-min.js'></script>
   <script src='/js/backbone-min.js'></script>
@@ -26,7 +27,16 @@
       </div>
     </div>
     <div class="content-body">
-      <h3>MoMath. Coming soon.</h3>
+      <div id="user-card" class="card"><div class="inner"></div></div>
+      <div id="visit-overview" class="card">
+        <div class="inner">
+          <h3>Visit History</h3>
+          <span id="selected-visit"></span>
+          <a id="show-all" class="client-action">all visits</a>
+          <ul id="visits"></ul>
+        </div>
+      </div>
+      <div id="creations"></div>
     </div>
     <div class="footer">
       <div class="inner">
@@ -35,6 +45,11 @@
     </div>
   </div>
 
+
+  <script src="/js/utils.js"></script>
+  <script src="/js/models/User.js"></script>
+  <script src="/js/models/VisitHistoryEntry.js"></script>
+  <script src="/js/momath.collections.js"></script>
   <script src="/js/mopin.js"></script>
 </body>
 </html>
