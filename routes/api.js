@@ -94,6 +94,7 @@ exports.content = function(request, response) {
     var response_body = response_buffer;
     if (content_type) {
       if (content_type.indexOf('application/xml') != -1) {
+        console.log('Response XML: ' + response_buffer)
         response_body = xml2json.toJson(response_buffer.toString());
         response.setHeader('Content-Type', 'application/json');
       } else {
