@@ -1,27 +1,34 @@
 
 
+var DEFAULT_DATE_FORMAT = 'MMMM d yyyy, hh:mma';
+var DEBUG = true;
 
-
+/** Logs the provided message. */
 function log(message) {
-  try {
-    console.log(message);
-  } catch (err) {
-    // No-op.
+  if (DEBUG) {
+    try {
+      console.log(message);
+    } catch (err) {
+      // No-op.
+    }
   }
 }
 
+
+/** Formats an epoch date string to either the default format or the provided one. */
 function formatEpochDateTime(dateEpochString, format) {
   if (!format) {
-    format = "MMMM d yyyy, hh:mma";
+    format = DEFAULT_DATE_FORMAT;
   }
  
   return $.format.date(new Date(parseInt(dateEpochString, 10)).toString(), format);
 }
 
 
+/** Formats a java date string to either the default format or the provided one. */
 function formatDateTime(dateString, format) {
   if (!format) {
-    format = "MMMM d yyyy, hh:mma";
+    format = DEFAULT_DATE_FORMAT;
   }
  
   return $.format.date(new Date(dateString).toString(), format);
@@ -41,9 +48,10 @@ window.UserCardView = Backbone.View.extend({
     $(this.el).empty();
   },
 
-  render : function(eventName) {
+  render : function(wrapperEl) {
+    this.el = wrapperEl;
+
     $(this.el).html(this.template(this.model.attributes.PersonInfo));
-    return this;
   }
 });
 
@@ -59,43 +67,58 @@ window.VisitHistoryEntryView = Backbone.View.extend({
     this.model.bind('destroy', this.close, this);
   },
 
-  render : function(eventName) {
+  render : function(creationManager, wrapper) {
     var entry = this.model.toJSON();
     entry.FormattedAssignedAt = formatDateTime(entry.AssignedAt);
 
     $(this.el).html(this.template(entry));
-    return this;
+    wrapper.append(this.el);
+
+    $(this.el).bind('click', _.bind(creationManager.handleVisitCreationsLoadRequest, creationManager, this.model));
   },
 
   close : function() {
     $(this.el).unbind();
     $(this.el).remove();
+  },
+
+  setLoaded : function() {
+    $(this.el).addClass('collection-loaded');
   }
 });
 
 
 /** An overview of the user's visit history. */
 window.VisitHistoryView = Backbone.View.extend({
-  el : $('#visits'),
+  el : null,
+  creationManager : null,
+  entryViews : {},
   
-  initialize: function() {
+  initialize: function(properties) {
+    this.model = properties.model;
+    this.creationManager = properties.creationManager;
+
+    this.el = $('#visits');
     this.model.bind('reset', this.render, this);
   },
 
-  render : function(eventName) {
+  render : function() {
     $(this.el).empty();
     
-    this.renderElements();
+    _.each(this.model.models, function(visitEntry) {
+      var entryView = new VisitHistoryEntryView({
+        model : visitEntry
+      });
+
+      entryView.render(this.creationManager, $(this.el))
+      this.entryViews[visitEntry.attributes.ID] = entryView;
+    }, this);
 
     return this;
   },
-  
-  renderElements : function() {
-    _.each(this.model.models, function(visitEntry) {
-      $(this.el).append(new VisitHistoryEntryView({
-        model : visitEntry
-      }).render().el);
-    }, this);
+
+  setVisitLoaded : function(visit) {
+    this.entryViews[visit.attributes.ID].setLoaded();
   }
 });
 
@@ -103,33 +126,36 @@ window.VisitHistoryView = Backbone.View.extend({
 /** Routes application. */
 var AppRouter = Backbone.Router.extend({
   routes : {
+    "" : "renderMain",
     "user/:id" : "renderCreationBoard"
+  },
+
+  renderMain : function() {
+    $('#content').html('<div class="message">MoMath. Coming Soon.</div>');
   },
   
   renderCreationBoard : function(id) {
+    $('#content').html(_.template($('#content-chrome').html()));
+    
   	var user = new User({id: id});
     user.fetch({
-      success : _.bind(function (data) {
-        $('#user-card .inner').html(new UserCardView({model:data}).render().el);
-
-        var visitHistoryCollection = new VisitHistoryCollection(data.attributes.PersonInfo.VisitHistory.Visit, {});
+      success : _.bind(function (userData) {
+        var userCardView = new UserCardView({model: userData});
+        userCardView.render($('#user-card .inner'));
+        
+        var visitHistoryCollection = new VisitHistoryCollection(userData.attributes.PersonInfo.VisitHistory.Visit, {});
+        var creationManager = new CreationManager(userData, visitHistoryCollection);
+        creationManager.initialize();
 
         var visitHistoryView = new VisitHistoryView({
-          model : visitHistoryCollection
+          model : visitHistoryCollection,
+          creationManager : creationManager
         });
+        
+        // TODO(gmike): These dependencies are probably messier than they should be.
+        creationManager.setVisitHistoryView(visitHistoryView);
         visitHistoryView.render();
-
-        /*this.feedElementList = new FeedElementCollection(user.id);
-        this.feedElementList.fetch({
-          success : _.bind(function () {
-            this.feedView = new FeedView({
-              model : this.feedElementList
-            });
-
-            this.feedElementList.setFeedView(this.feedView);
-            this.feedView.render();
-          }, this)
-        });*/
+        creationManager.fetchCreations();
       }, this)
     });
   }
@@ -137,7 +163,9 @@ var AppRouter = Backbone.Router.extend({
 
 var adhocTemplates = [
   'user.profile.card',
-  'visit.history.entry'
+  'visit.history.entry',
+  'creation.collection',
+  'creation.card'
 ];
 
 tpl.loadTemplates(adhocTemplates, function() {
