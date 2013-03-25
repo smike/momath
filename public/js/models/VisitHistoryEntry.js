@@ -5,11 +5,6 @@ window.VisitHistoryEntry = Backbone.Model.extend({
 
   url : function() {
     return "/api/content/visit/" + this.id + "?detail=true";
-  },
-
-  defaults : {
-    "id" : null,
-    "VisitInfo" : ""
   }
 });
 

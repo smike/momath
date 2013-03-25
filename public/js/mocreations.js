@@ -8,6 +8,12 @@ var EXHIBIT_IDS = [
   'TIFA.OD'
 ];
 
+/** Knwon image file name extensions and their MIME types. */
+var IMAGE_MIME_TYPES = {
+  'png': 'image/png',
+  'jpg': 'image/jpeg',
+  'jpeg': 'image/jpeg'
+};
 
 /** Renders a card view of a creation. */
 window.CreationCardView = Backbone.View.extend({
@@ -15,8 +21,35 @@ window.CreationCardView = Backbone.View.extend({
     this.template = _.template(tpl.get('creation.card'));
   },
 
-  render : function(wrapper) {
-    var attrs = {};
+  getBlobUrl_ : function(creation, blobId, mimeType) {
+    var url = '/api/content/exhibit-blob/' +
+        [creation.exhibitId, creation.visitId, blobId].join('/');
+    if (mimeType) {
+      url += "?type=" + mimeType;
+    }
+    return url;
+  },
+
+  render : function(wrapper, creation) {
+    var imageUrl = null;
+    _.find(creation.getBlobIds(), function(blobId) {
+      var extension = blobId.substr(blobId.lastIndexOf(".") + 1);
+      var mimeType = IMAGE_MIME_TYPES[extension];
+      if (mimeType) {
+        imageUrl = this.getBlobUrl_(creation, blobId, mimeType);
+        return true;
+      }
+    }, this);
+    var attrs = {
+      ExhibitName: creation.attributes.ExhibitBlobList.ExhibitID,
+      blobs: _.map(creation.getBlobIds(), function(blobId) {
+        return {
+          name: blobId,
+          url: this.getBlobUrl_(creation, blobId)
+        };
+      }, this),
+      imageUrl: imageUrl
+    };
     this.el = $(this.template(attrs))[0];
     wrapper.appendChild(this.el);
   }
@@ -36,6 +69,10 @@ window.CreationCollectionView = Backbone.View.extend({
     $(this.el).empty();
   },
 
+  shouldRenderCreation: function(creation) {
+    var blobList = [];
+  },
+
   render : function(visit, creations) {
     var visitInfo = {
       FormattedAssignedAt : formatDateTime(visit.attributes.AssignedAt)
@@ -45,8 +82,9 @@ window.CreationCollectionView = Backbone.View.extend({
     this.wrapperEl.appendChild(this.el);
     var creationWrapper = $(this.el).find('.creations')[0];
     _.each(creations, function(creation) {
+
       var creationCard = new CreationCardView({});
-      creationCard.render(creationWrapper);
+      creationCard.render(creationWrapper, creation);
     });
   }
 });
@@ -63,13 +101,10 @@ function CreationManager(user, visits) {
   this.creations = {};
 
   /** All creations across exhibits by visit id. */
-  this.creationViews = {};
-
-  /** Creation collections by visit id and exhibit id. */
-  this.creationCollections = {};
+  this.creationCollectionViews = {};
 
   /** Number of outstanding collections needed to be fetched per visit. */
-  this.collectionsToFetch = {};
+  this.creationsToFetch = {};
 
   /** A view of the visit history. */
   this.visitHistoryView = null;
@@ -85,25 +120,28 @@ CreationManager.prototype.setVisitHistoryView = function(visitHistoryView) {
 
 CreationManager.prototype.fetchCreations = function() {
   var visit = this.visits.models[0];
-  
+
   this.fetchCreationsForVisit_(visit);
 };
 
 /** Fetches all creations from creation-making exhibits for the provided visit. */
 CreationManager.prototype.fetchCreationsForVisit_ = function(visit) {
   var visitId = visit.attributes.ID;
-  this.collectionsToFetch[visitId] = EXHIBIT_IDS.length;
+  this.creationsToFetch[visitId] = EXHIBIT_IDS.length;
 
   _.each(EXHIBIT_IDS, function(exhibitId) {
-    log("Fetching creations for: " + this.user.id + " // " + exhibitId);
+    log("Fetching creation for: " + this.user.id + " // " + exhibitId);
 
-    this.creationCollections[exhibitId] = new CreationCollection([], {
+    if (!this.creations.hasOwnProperty(visitId)) {
+      this.creations[visitId] = {};
+    }
+    this.creations[visitId][exhibitId] = new Creation({
       visitId : visitId,
       exhibitId : exhibitId
     });
-    this.creationCollections[exhibitId].fetch({
-      success : _.bind(function () {
-        this.handleCollectionFetchResponse(visit, exhibitId);
+    this.creations[visitId][exhibitId].fetch({
+      success: _.bind(function () {
+        this.handleCreationFetchResponse(visit, exhibitId);
       }, this)
     });
   }, this);
@@ -111,33 +149,27 @@ CreationManager.prototype.fetchCreationsForVisit_ = function(visit) {
 
 CreationManager.prototype.handleVisitCreationsLoadRequest = function(visit) {
   var visitId = visit.attributes.ID;
-  if (this.collectionsToFetch.hasOwnProperty(visitId) && this.collectionsToFetch[visitId] !== 0) {
+  if (this.creationsToFetch.hasOwnProperty(visitId) && this.creationsToFetch[visitId] !== 0) {
     return;
   }
 
   this.fetchCreationsForVisit_(visit);
 };
 
-CreationManager.prototype.handleCollectionFetchResponse = function(visit, exhibitId) {
+CreationManager.prototype.handleCreationFetchResponse = function(visit, exhibitId) {
   var visitId = visit.attributes.ID;
+  var creation = this.creations[visitId][exhibitId];
 
-  this.collectionsToFetch[visitId]--;
-  if (this.collectionsToFetch[visitId] === 0) {
-    this.mergeAndRenderCreations(visit);
+  this.creationsToFetch[visitId]--;
+  if (creation.getBlobIds().length == 0) {
+    // The server will always return a creation. If there aren't any blobs we
+    // can assume that there was no creation.
+    delete this.creations[visitId][exhibitId];
   }
-};
 
-CreationManager.prototype.mergeAndRenderCreations = function(visit) {
-  var visitId = visit.attributes.ID;
-
-  var all = []
-  _.each(EXHIBIT_IDS, function(exhibitId) {
-    var models = this.creationCollections[exhibitId].models;
-    all = _.union(all, models);
-  }, this);
-
-  this.creations[visitId] = all;
-  this.renderCreations(visit, all);
+  if (this.creationsToFetch[visitId] === 0) {
+    this.renderCreations(visit, this.creations[visitId]);
+  }
 };
 
 CreationManager.prototype.renderCreations = function(visit, creations) {
@@ -147,7 +179,7 @@ CreationManager.prototype.renderCreations = function(visit, creations) {
   var creationCollectionView = new CreationCollectionView();
   creationCollectionView.render(visit, creations);
 
-  this.creationViews[visitId] = creationCollectionView;
+  this.creationCollectionViews[visitId] = creationCollectionView;
   this.visitHistoryView.setVisitLoaded(visit);
 };
 

@@ -4,15 +4,28 @@ window.Creation = Backbone.Model.extend({
   exhibitId : null,
   visitId : null,
 
-  url : function() {
-    return '/api/content/exhibit-blob-list/' + this.exhibitId + '/' + this.visitId + '/' + this.id;
+  initialize : function(properties) {
+    this.exhibitId = properties.exhibitId;
+    this.visitId = properties.visitId;
   },
 
-  defaults : {
-    'id' : null,
-    'ExhibitBlobList' : ''
+  url : function() {
+    return '/api/content/exhibit-blob-list/' + this.exhibitId + '/' + this.visitId;
+  },
+
+  getBlobIds : function() {
+    var exhibitBlobList = this.attributes.ExhibitBlobList;
+    if (!exhibitBlobList.hasOwnProperty('Blob')) {
+      return [];
+    }
+
+    // the xml2json library is a bit funky. If it sees only one Blob node it
+    // will not create an array for it.
+    var blobs = _.flatten([exhibitBlobList.Blob]);
+    return _.map(blobs, function(blob) { return blob.ID; });
   }
 });
+
 
 /** TODO(gmike): Remove example requests
 

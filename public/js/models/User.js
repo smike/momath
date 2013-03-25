@@ -7,9 +7,15 @@ window.User = Backbone.Model.extend({
     return "/api/content/person/" + this.id + "?detail=true";
   },
 
-  defaults : {
-    "id" : null,
-    "PersonInfo" : ""
+  getVisits : function() {
+    var visitHistory = this.attributes.PersonInfo.VisitHistory;
+    if (!visitHistory.hasOwnProperty("Visit")) {
+      return [];
+    }
+
+    // the xml2json library is a bit funky. If it sees only one Blob node it
+    // will not create an array for it.
+    return _.flatten([visitHistory.Visit]);
   }
 });
 
