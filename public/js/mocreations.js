@@ -8,7 +8,7 @@ var EXHIBIT_IDS = [
   'TIFA.OD'
 ];
 
-/** Knwon image file name extensions and their MIME types. */
+/** Known image file name extensions and their MIME types. */
 var IMAGE_MIME_TYPES = {
   'png': 'image/png',
   'jpg': 'image/jpeg',
@@ -67,10 +67,6 @@ window.CreationCollectionView = Backbone.View.extend({
   close: function() {
     $(this.el).unbind();
     $(this.el).empty();
-  },
-
-  shouldRenderCreation: function(creation) {
-    var blobList = [];
   },
 
   render : function(visit, creations) {
