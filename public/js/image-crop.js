@@ -23,7 +23,7 @@ function getForegroundBounds(context, width, height) {
 
   // not necessary to initialie fields, it will happen anyway.
   var bounds = { top: 0, bottom: height, left: 0, right: width };
-  
+
   // move in from each edge until. As long as we're seeing all pixels of the
   // same color assume that it's part of a "background". As soon as we see a
   // different color assume that's the beginning of a "foreground".
