@@ -2,7 +2,7 @@
   <div class="front">
     <span class="exhibit-name"><%= ExhibitName %></span>
     <div class="creation">
-      <img src="<%= imageUrl %>">
+      <canvas id="<%= id %>"></canvas>
       <% _.each(blobs, function(blob) { %>
         <a href="<%= blob.url%>"><%= blob.name%></a>
       <% }); %>

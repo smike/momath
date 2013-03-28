@@ -82,12 +82,11 @@ div#wrapper div.footer .inner {
   float: left;
 }
 
-.creation-card img {
+.creation-card canvas {
   border: 1px solid #999;
   width: 100%;
   margin-right: 8px;
   margin-bottom: 8px;
-  float: left;
 }
 
 .card .inner {

@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>MoMath Person Test</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+    <script src="/js/image-crop.js"></script>
+    <style>
+      #log-container {
+        position: fixed;
+        right: 0;
+        top: 0;
+        width: 50%;
+        height: 500px;
+        padding: 10px;
+        background-color: rgba(225, 225, 225, 0.5);
+        overflow: scroll;
+      }
+    </style>
+  </head>
+  <body>
+    <script>
+      function log(message) {
+        console.log(message);
+        $("#log").append(message + "<br>");
+      }
+
+      var IMAGE_URL = '/api/content/exhibit-blob/MTHN.OD/7c48ec43-c9ab-4174-9a0d-2278c4030169/poly_000.png?type=image/png';
+      window.onload = function() {
+        $("#original-image")[0].src = IMAGE_URL;
+        cropImageData(IMAGE_URL, $('#modified-canvas')[0], 20, 50);
+      };
+    </script>
+    Original:
+    <img id="original-image"/><br/>
+    <canvas id="hidden-canvas" style="display: none"></canvas>
+    Modified:<canvas id="modified-canvas"></canvas>
+    <div id="log-container">Log:<pre id="log"></pre></div>
+  </body>
+</html>

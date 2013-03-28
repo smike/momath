@@ -48,9 +48,11 @@ window.CreationCardView = Backbone.View.extend({
           url: this.getBlobUrl_(creation, blobId)
         };
       }, this),
-      imageUrl: imageUrl
+      id: imageUrl
     };
     this.el = $(this.template(attrs))[0];
+    cropImageData(imageUrl, $(this.el).find('canvas')[0], 10, 10);
+
     wrapper.appendChild(this.el);
   }
 });
