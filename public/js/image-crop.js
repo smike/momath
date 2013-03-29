@@ -1,13 +1,16 @@
 // Checks if data is composed of repetitions of slice.
 function isRepeated(slice, data) {
+  var d_len = data.length;
+  var s_len = slice.length;
+
   // if the size of data can't fit an integer number of slices, we could
   // never match.
-  if (data.length % slice.length !== 0) {
+  if (d_len % s_len !== 0) {
     return false;
   }
 
-  for (var p = 0; p < data.length; p += slice.length) {
-    for (var c = 0; c < slice.length; c++) {
+  for (var p = 0; p < d_len; p += s_len) {
+    for (var c = 0; c < s_len; c++) {
       if (data[p+c] != slice[c]) {
         return false;
       }
@@ -42,14 +45,14 @@ function getForegroundBounds(context, width, height) {
     }
   }
   for (var y = 0; y < height; y++) {
-    var pixelRow = context.getImageData(0, y, width, 1).data;
+    var pixelRow = context.getImageData(bounds.left, y, bounds.right - bounds.left, 1).data;
     if (!isRepeated(bg_color, pixelRow)) {
       bounds.top = y;
       break;
     }
   }
   for (var y = height - 1; y >= 0; y--) {
-    var pixelRow = context.getImageData(0, y, width, 1).data;
+    var pixelRow = context.getImageData(bounds.left, y, bounds.right - bounds.left, 1).data;
     if (!isRepeated(bg_color, pixelRow)) {
       bounds.bottom = y;
       break;
