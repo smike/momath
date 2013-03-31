@@ -3,29 +3,25 @@
   <head>
     <title>3D Test</title>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
-    <script src="/js/lib/binary-parser.js"></script>
+    <script src="/js/lib/jdataview.js"></script>
     <script src="/js/lib/lib3ds.js"></script>
     <script src="/js/lib/three.min.js"></script>
+    <script src="/js/lib/TrackballControls.js"></script>
     <style>
-      #log-container {
-        position: fixed;
-        right: 0;
-        top: 0;
-        width: 50%;
-        height: 500px;
-        padding: 10px;
-        background-color: rgba(225, 225, 225, 0.5);
-        overflow: scroll;
-        display:none;
+      body {
+        background-color: rgb(0, 0, 0);
+      }
+      #inputs-span {
+        background-color: rgb(255, 255, 255);
+        padding: 5px;
       }
     </style>
   </head>
   <body>
     <script>
-      var URL = "/poly_001.3ds";
-
       var lib3ds;
-      var camera, scene, renderer;
+      var object, camera, scene, renderer, controls, bounds = new THREE.Box3();
+      var shouldAnimate = true;
       var i = 0;
 
       function log(message) {
@@ -40,49 +36,70 @@
       function submit() {
         log("sending request");
 
+        var url = $("#model-url")[0].value;
         $.ajax({
-          url: URL,
+          url: url,
           beforeSend: function ( xhr ) {
             xhr.overrideMimeType("text/plain; charset=x-user-defined");
           },
-          success: function (responseText) {
+          success: function (response) {
             var debugDiv = document.getElementById("log")
             lib3ds = new Lib3ds(debugDiv,
-                                false, // debug?
-                                responseText);
+                                false); // debug?
 
             // read the 3DS
             log("starting to read");
             var start = new Date();
-            lib3ds.readFile();
+            lib3ds.readFile(response);
             log("finished reading in " + (new Date() - start));
 
             init();
+            setupControls();
             animate();
           },
         });
 
+        function animate() {
+          // note: three.js includes requestAnimationFrame shim
+          requestAnimationFrame( animate );
+
+          if (shouldAnimate) {
+            object.rotation.x += 0.001;
+            object.rotation.y += 0.002;
+            object.updateMatrix();
+          }
+          controls.update();
+          renderer.render( scene, camera );
+        }
+
         function init() {
           log('starting to draw');
           var start = new Date();
-          camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 1, 10000 );
-          camera.position.z = 100;
 
           scene = new THREE.Scene();
-          scene.scale = new THREE.Vector3(60, 60, 60);
-          scene.updateMatrix();
 
-          for (var i = 0; i < lib3ds.meshes.length; i++) {
-            addMesh(lib3ds.meshes[i]);
+          object = new THREE.Object3D();
+          for (var i in lib3ds.meshes) {
+            addMesh(lib3ds.meshes[i], object);
           }
+          scene.add(object);
 
-          var light = new THREE.PointLight(0xffffff, 100);
-          light.position.set(100, 100, 150);
-          scene.add(light);
-          var directionalLight = new THREE.DirectionalLight( 0xffffff, 0.5 );
-          directionalLight.position.set( 0, 1, 0 );
-          scene.add( directionalLight );
+          // Lights...
+          var pointLight = new THREE.PointLight(0xa0a0a0);
+          pointLight.castShadow = true;
+          pointLight.position.x = 5;
+          pointLight.position.y = 5;
+          pointLight.position.z = 5;
+          scene.add(pointLight);
 
+          var ambientLight = new THREE.AmbientLight(0x404040);
+          scene.add( ambientLight );
+
+          // Camera...
+          camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 10000 );
+          camera.position.z = 2;
+
+          // Action!
           renderer = new THREE.WebGLRenderer();
           renderer.setSize(window.innerWidth, window.innerHeight);
           document.body.appendChild( renderer.domElement );
@@ -90,53 +107,88 @@
           log("finished drawing in " + (new Date() - start));
         }
 
-        function addMesh(lib3dsMesh) {
+        function addMesh(lib3dsMesh, object) {
           var geometry = createGeometry(lib3dsMesh);
-          var material = new THREE.MeshBasicMaterial({
-            color: 0xFF0000,
-            wireframe: true
+
+          // THREE only supports one material per mesh, not per face, so we just pick the material
+          // for the first face and apply to all in the mesh.
+          var materialName = lib3dsMesh.faceL[0].material;
+          var lib3dsMaterial = lib3ds.materials[materialName];
+          var material = new THREE.MeshLambertMaterial({
+            color: lib3dsMaterial.diffuseColor,
+            ambient: lib3dsMaterial.ambientColor,
+            specular: lib3dsMaterial.specularColor,
+            wireframe: false
           });
           var mesh = new THREE.Mesh(geometry, material);
-          scene.add(mesh);
-        }
+          object.add(mesh);
 
-        function animate() {
-          // note: three.js includes requestAnimationFrame shim
-          requestAnimationFrame( animate );
-
-          scene.rotation.x += 0.001;
-          scene.rotation.y += 0.002;
-          scene.updateMatrix();
-
-          renderer.render( scene, camera );
+          geometry.computeBoundingBox();
+          bounds.union(geometry.boundingBox);
         }
 
         function createGeometry(lib3dsMesh) {
           var geometry = new THREE.Geometry();
-          for (var i = 0; i < lib3dsMesh.points; i++) {
+          for (var i in lib3dsMesh.pointL) {
             var point = lib3dsMesh.pointL[i];
             geometry.vertices.push(
               new THREE.Vector3(point[0], point[1], point[2]));
-            geometry.faceVertexUvs[0].push(new THREE.Vector2(
-              lib3dsMesh.texelL[i][0], lib3dsMesh.texelL[i][1]));
           }
-          geometry.uvsNeedUpdate = true;
 
-          for (var i = 0; i < lib3dsMesh.faces; i++) {
+          for (var i in lib3dsMesh.faceL) {
             var face = lib3dsMesh.faceL[i];
-            geometry.faces.push(
-              new THREE.Face3(face.points[0], face.points[1], face.points[2]));
+
+            // vertex indices
+            var v1 = face.points[0];
+            var v2 = face.points[1];
+            var v3 = face.points[2];
+            geometry.faces.push(new THREE.Face3(v1, v2, v3));
+
+            if (v1 < lib3dsMesh.texelL.length &&
+                v2 < lib3dsMesh.texelL.length &&
+                v3 < lib3dsMesh.texelL.length) {
+              var uv1 = new THREE.Vector2(
+                      lib3dsMesh.texelL[v1][0], lib3dsMesh.texelL[v1][1])
+              var uv2 = new THREE.Vector2(
+                      lib3dsMesh.texelL[v2][0], lib3dsMesh.texelL[v2][1])
+              var uv3 = new THREE.Vector2(
+                      lib3dsMesh.texelL[v3][0], lib3dsMesh.texelL[v3][1])
+              geometry.faceVertexUvs[0].push([uv1, uv2, uv3]);
+            }
           }
-          geometry.computeBoundingSphere();
+          geometry.computeFaceNormals();
+          geometry.computeVertexNormals();
+          geometry.computeTangents();
           return geometry;
         }
       }
+
+      function setupControls() {
+        // This is copied from
+        //https://github.com/mrdoob/three.js/blob/master/examples/misc_controls_trackball.html
+        controls = new THREE.TrackballControls( camera );
+
+        controls.rotateSpeed = 1.0;
+        controls.zoomSpeed = 0.1;
+        controls.panSpeed = 0.8;
+
+        controls.noZoom = false;
+        controls.noPan = false;
+
+        controls.staticMoving = true;
+        controls.dynamicDampingFactor = 0.3;
+
+        controls.keys = [ 65, 83, 68 ];
+
+        //controls.addEventListener( 'change', render );
+      }
     </script>
     <form action="javascript:submit();">
-      <input type="submit" value="Go!"/>
+      <span id="inputs-span">
+        <input id="model-url" type="text" value="poly_001.3ds"></input>
+        <input type="submit" value="Render!"/>
+        <input type="checkbox" checked onchange="shouldAnimate = this.checked;">Animate</input>
+      </span>
     </form>
-    <div id="log-container">Log:<pre id="log"></pre></div>
-    <div id="loading-indicator" style="display:none">Loading...</div>
-    <div id="output"></div>
   </body>
 </html>
