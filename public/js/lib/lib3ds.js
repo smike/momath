@@ -216,305 +216,424 @@ var VIEWPORT_DATA_3 = 0x7012;
 var VIEWPORT_SIZE = 0x7020;
 var NETWORK_VIEW = 0x7030;
 
-Lib3ds = function(element, debug, data) {
-  this.element = element;
-  this.debug = debug != undefined ? debug : false;
-  this.parser = new BinaryParser(false, false);
-  this.position = 0;
-  this.meshes = [];
-  this.data = data;
+Lib3ds = function(element, debug) {
+	this.element = element;
+	this.debug = debug != undefined ? debug : false;
+	this.position = 0;
+	this.meshes = [];
+	this.materials = {};
 };
 
 with ({p:Lib3ds.prototype}) {
-  p.readFile = function() {
-    this.position = 0;
-    this.meshes = [];
+	p.readFile = function(fileContents) {
+		this.position = 0;
+		this.meshes = [];
+		this.materials = {};
 
-    var chunk = this.readChunk();
-    var c = 0;
+		var data = new jDataView(fileContents,
+								 0,  // offset
+								 undefined, // byte length. let the library calculate that.
+								 true); // little endian
+		var chunk = this.readChunk(data);
+		var c = 0;
 
-    switch (chunk.id) {
-      case MLIBMAGIC:
-      case CMAGIC:
-      case M3DMAGIC:
-        c = this.nextChunk(chunk);
-        while (c != 0) {
-          switch (c) {
-            case M3D_VERSION:
-              this.mesh_version = this.readDWord();
-              this.log("M3D_VERSION " + this.mesh_version);
-              break;
-            case MDATA: // Model data
-              this.resetPosition();
-              this.log("MDATA");
-              this.readMDATA();
-              break;
-            case KFDATA: // Keyframe data
-              this.log("KFDATA not supported");
-              break;
-            default:
-              this.log("Unknown chunk: " + c.toString(16));
-              break;
-          }
-          c = this.nextChunk(chunk);
-        }
-        break;
-      default:
-        this.log("Unknown chunk id: " + chunk.id.toString(16));
-        break;
-    }
-    this.log("parsed #" + this.meshes.length + " meshes!");
-  }
+		switch (chunk.id) {
+			case MLIBMAGIC:
+		    case CMAGIC:
+			case M3DMAGIC:
+				c = this.nextChunk(data, chunk);
+				while (c != 0) {
+					switch (c) {
+						case M3D_VERSION:
+							this.mesh_version = this.readDWord(data);
+							this.log("M3D_VERSION " + this.mesh_version);
+							break;
+						case MDATA: // Model data
+							this.resetPosition(data);
+							this.log("MDATA");
+							this.readMDATA(data);
+							break;
+						case KFDATA: // Keyframe data
+						default:
+							this.log("Unknown chunk: " + c.toString(16));
+							break;
+					}
+					c = this.nextChunk(data, chunk);
+				}
+				break;
+			default:
+				this.log("Unknown main chunk: " + c.toString(16));
+				break;
+		}
+		this.log("parsed #" + this.meshes.length + " meshes!");
+	}
 
-  p.readMDATA = function() {
-    var chunk = this.readChunk();
-    var c = this.nextChunk(chunk);
+	p.readMDATA = function(data) {
+		var chunk = this.readChunk(data);
+		var c = this.nextChunk(data, chunk);
 
-    while (c != 0) {
-      switch (c) {
-        case MESH_VERSION:
-          this.mesh_version = this.readInt();
-          this.log( "MESH_VERSION: " + this.mesh_version );
-          break;
-        case MASTER_SCALE:
-          this.master_scale = this.readFloat();
-          this.log( "MASTER_SCALE: " + this.master_scale );
-          break;
-        case NAMED_OBJECT:
-          this.resetPosition();
-          this.log("NAMED OBJECT");
-          this.readNamedObject();
-          break;
-        default:
-          this.log("Unknown MDATA chunk: " + c.toString(16));
-          break;
-      }
-      c = this.nextChunk(chunk);
-    }
-  }
+		while (c != 0) {
+			switch (c) {
+				case MESH_VERSION:
+					this.mesh_version = this.readInt(data);
+					this.log("MESH_VERSION: " + this.mesh_version);
+					break;
+				case MASTER_SCALE:
+					this.master_scale = this.readFloat(data);
+					this.log("MASTER_SCALE: " + this.master_scale);
+					break;
+				case NAMED_OBJECT:
+					this.resetPosition(data);
+					this.log("NAMED OBJECT");
+					this.readNamedObject(data);
+					break;
+				case MAT_ENTRY:
+					this.resetPosition(data);
+					this.log("MATERIAL ENTRY");
+					this.readMaterialEntry(data);
+					break;
+				default:
+					this.log("Unknown MDATA chunk: " + c.toString(16));
+					break;
+			}
+			c = this.nextChunk(data, chunk);
+		}
+	}
 
-  p.readMesh = function() {
-    var chunk = this.readChunk();
-    var c = this.nextChunk(chunk);
-    var mesh = new Lib3dsMesh();
-    var i, j;
+	p.readMaterialEntry = function(data) {
+		var chunk = this.readChunk(data);
+		var c = this.nextChunk(data, chunk);
 
-    while (c != 0) {
-      switch (c) {
-        case MESH_MATRIX:
-          this.log ("MESH_MATRIX not supported.");
-          break;
-        case MESH_TEXTURE_INFO:
-          this.log ("MESH_TEXTURE_INFO not supported.");
-          break;
-        case POINT_FLAG_ARRAY:
-          this.log ("POINT_FLAG_ARRAY not supported.");
-          break;
-        case MESH_COLOR:
-          mesh.color = this.readByte();
-          this.log (" -> color: " + mesh.color);
-          break;
-        case POINT_ARRAY:
-          mesh.points = this.readWord();
-          mesh.pointL = [];
-          this.log (" -> #points: " + mesh.points + " " + this.position);
-          for (i = 0; i < mesh.points; i++) {
-            var vec = [];
-            for (j = 0; j < 3; j++) {
-              vec.push(this.readFloat());
-            }
-            mesh.pointL.push(vec);
-          }
-          break;
-        case FACE_ARRAY:
-          this.resetPosition();
-          this.readFaceArray(mesh);
-          break;
-        case TEX_VERTS:
-          mesh.texels = this.readWord();
-          mesh.texelL = [];
-          this.log (" -> #texels: " + mesh.texels);
-          for (i = 0; i < mesh.texels; i++) {
-            mesh.texelL.push([this.readFloat(), this.readFloat()]);
-          }
-          break;
-        default:
-          this.log("Unknown Mesh chunk: " + c.toString(16));
-          break;
-      }
-      c = this.nextChunk(chunk);
-    }
+		var material = new Lib3dsMaterial();
 
-    this.endChunk(chunk);
+		while (c != 0) {
+			switch (c) {
+				case MAT_NAME:
+					material.name = this.readString(data, 64);
+					this.log(" -> name: " + material.name);
+					break;
+				case MAT_AMBIENT:
+					material.ambientColor = this.readColor(data);
+					this.log(" -> ambientColor: " + material.ambientColor.toString(16));
+					break;
+				case MAT_DIFFUSE:
+					material.diffuseColor = this.readColor(data);
+					this.log(" -> diffuseColor: " + material.diffuseColor.toString(16));
+					break;
+				case MAT_SPECULAR:
+					material.specularColor = this.readColor(data);
+					this.log(" -> specularColor: " + material.specularColor.toString(16));
+					break;
+				default:
+					this.log(" -> Unknown material chunk: " + c.toString(16));
+					break;
+			}
+			c = this.nextChunk(data, chunk);
+		}
 
-    return mesh;
-  }
+		this.endChunk(chunk);
+		this.materials[material.name] = material;
+	}
 
-  p.readFaceArray = function(mesh) {
-    var chunk = this.readChunk();
-    var i, j;
+	p.readColor = function(data) {
+		var chunk = this.readChunk(data);
 
-    mesh.faces = this.readWord();
-    mesh.faceL = [];
+		var color = 0;
+		switch (chunk.id) {
+			case COLOR_24:
+			case LIN_COLOR_24:
+				var r = this.readByte(data);
+				var g = this.readByte(data);
+				var b = this.readByte(data);
+				color = r << 16 | g << 8 | b;
+				break;
+			case COLOR_F:
+			case LIN_COLOR_F:
+				var r = this.readFloat(data);
+				var g = this.readFloat(data);
+				var b = this.readFloat(data);
+				color = Math.floor(r * 255) << 16 | Math.floor(g * 255) << 8 | Math.floor(b * 255);
+				break;
+			default:
+				this.log("Unknown color chunk: " + c.toString(16));
+				break;
+		}
 
-    this.log (" -> #faces: " + mesh.faces);
+		this.endChunk(chunk);
+		return color;
+	}
 
-    for(i = 0; i < mesh.faces; ++i) {
-      var face = new Lib3dsFace();
+	p.readMesh = function(data) {
+		var chunk = this.readChunk(data);
+		var c = this.nextChunk(data, chunk);
+		var mesh = new Lib3dsMesh();
+		var i, j;
 
-      face.points = [];
-      face.points.push(this.readWord());
-      face.points.push(this.readWord());
-      face.points.push(this.readWord());
+		while (c != 0) {
+			switch (c) {
+				case MESH_COLOR:
+					mesh.color = this.readByte(data);
+					this.log (" -> color: " + mesh.color);
+					break;
+				case POINT_ARRAY:
+					mesh.points = this.readWord(data);
+					mesh.pointL = [];
+					this.log (" -> #points: " + mesh.points + " " + this.position);
+					for (i = 0; i < mesh.points; i++) {
+						var vec = [];
+						for (j = 0; j < 3; j++) {
+							vec.push(this.readFloat(data));
+						}
+						mesh.pointL.push(vec);
+					}
+					break;
+				case FACE_ARRAY:
+					this.resetPosition(data);
+					this.readFaceArray(data, mesh);
+					break;
+				case TEX_VERTS:
+					mesh.texels = this.readWord(data);
+					mesh.texelL = [];
+					this.log (" -> #texels: " + mesh.texels);
+					for (i = 0; i < mesh.texels; i++) {
+						mesh.texelL.push([this.readFloat(data), this.readFloat(data)]);
+					}
+					break;
+				case MESH_MATRIX:
+				case POINT_FLAG_ARRAY:
+				case MESH_TEXTURE_INFO:
+				default:
+					this.log(" -> Unknown mesh chunk: " + c.toString(16));
+					break;
+			}
+			c = this.nextChunk(data, chunk);
+		}
 
-      // visibility I believe (0 or 1)
-      face.flags = this.readWord();
+		this.endChunk(chunk);
 
-      mesh.faceL.push(face);
-    }
+		return mesh;
+	}
 
-  }
+	p.readFaceArray = function(data, mesh) {
+		var chunk = this.readChunk(data);
+		var i, j;
 
-  p.readNamedObject = function() {
-    var chunk = this.readChunk();
+		mesh.faces = this.readWord(data);
+		mesh.faceL = [];
 
-    var name = this.readString(64);
+		this.log (" -> #faces: " + mesh.faces);
 
-    this.log(" -> " + name);
+		for(i = 0; i < mesh.faces; ++i) {
+			var face = new Lib3dsFace();
 
-    chunk.cur = this.position;
+			face.points = [];
+			face.points.push(this.readWord(data));
+			face.points.push(this.readWord(data));
+			face.points.push(this.readWord(data));
 
-    var c = this.nextChunk(chunk);
+			// visibility I believe (0 or 1)
+			face.flags = this.readWord(data);
 
-    while (c != 0) {
-      switch (c) {
-        case N_TRI_OBJECT:
-          this.resetPosition();
-          var mesh = this.readMesh();
-          this.meshes.push(mesh);
-          break;
-        default:
-          this.log("Unknown Name Object chunk: " + c.toString(16));
-          break;
-      }
-      c = this.nextChunk(chunk);
-    }
+			mesh.faceL.push(face);
+		}
 
-    this.endChunk(chunk);
-  }
+		// Thr rest of the FACE_ARRAY chunk is subchunks
+		while (this.position < chunk.end) {
+			var chunk = this.readChunk(data);
 
-  p.readChunk = function() {
-    var chunk = new Lib3dsChunk();
-    chunk.cur = this.position;
-    chunk.id = this.readWord();
-    chunk.size = this.readDWord();
-    chunk.end = chunk.cur + chunk.size;
+			switch (chunk.id) {
+				case MSH_MAT_GROUP:
+					this.log(" -> MATERIAL_GROUP");
+					this.resetPosition(data);
+					var materialGroup = this.readMaterialGroup(data);
 
-    //console.log("Read Chunk " + chunk.id.toString(16) + " of size " + (chunk.size-6) + " at " + chunk.cur);
-    chunk.cur += 6;
-    return chunk;
-  }
+					var faceIdxs = materialGroup.faceIdxs;
+					for (i = 0; i < faceIdxs.length; i++) {
+						var face = mesh.faceL[faceIdxs[i]];
+						face.material = materialGroup.name;
+					}
+					break;
+				case SMOOTH_GROUP:
+				default:
+					this.log(" -> Unknown face array chunk: " + c.toString(16));
+					break;
+			}
 
-  p.endChunk = function(chunk) {
-    this.position = chunk.end;
-  }
+			this.endChunk(chunk);
+		}
 
-  p.nextChunk = function(chunk) {
-    if (chunk.cur >= chunk.end) {
-      return 0;
-    }
-    this.position = chunk.cur;
-    try {
-      var next = this.readChunk();
-      chunk.cur += next.size;
-      return next.id;
-    } catch(e) {
-      return 0;
-    }
-  }
+		this.endChunk(chunk);
+	}
 
-  p.resetPosition = function(chunk) {
-    this.position -= 6;
-  }
+	p.readMaterialGroup = function(data) {
+		var chunk = this.readChunk(data);
 
-  p.readByte = function() {
-    var v = this.parser.toByte(this.data.substr(this.position, 1));
-    this.position += 1;
-    return v;
-  }
+		var materialName = this.readString(data, 64);
+		var numFaces = this.readWord(data);
 
-  p.readFloat = function() {
-    try {
-    var v = this.parser.toFloat(this.data.substr(this.position, 4));
-    this.position += 4;
-    return v;
-    } catch(e) {
-      this.log("" + e + " " + this.position + " " + this.data.length);
-    }
-  }
+		this.log(" --> material name: " + materialName);
+		this.log(" --> num faces: " + numFaces);
 
-  p.readInt = function() {
-    var v = this.parser.toInt(this.data.substr(this.position, 4));
-    this.position += 4;
-    return v;
-  }
+		var faceIdxs = [];
+		for(var i = 0; i < numFaces; ++i) {
+			faceIdxs.push(this.readWord(data));
+		}
+		return {name: materialName, faceIdxs: faceIdxs};
+	}
 
-  p.readShort = function() {
-    var v = this.parser.toShort(this.data.substr(this.position, 2));
-    this.position += 2;
-    return v;
-  }
+	p.readNamedObject = function(data) {
+		var chunk = this.readChunk(data);
 
-  p.readDWord = function() {
-    var v = this.parser.toDWord(this.data.substr(this.position, 4));
-    this.position += 4;
-    return v;
-  }
+		var name = this.readString(data, 64);
 
-  p.readWord = function() {
-    var v = this.parser.toWord(this.data.substr(this.position, 2));
-    this.position += 2;
-    return v;
-  }
+		this.log(" -> " + name);
 
-  p.readString = function(maxLength) {
-    var s = "";
-    for(var i = 0; i < maxLength; i++) {
-      var c = this.readByte();
-      if( !c ) break;
-      s += String.fromCharCode(c);
-    }
-    return s;
-  }
+		chunk.cur = this.position;
 
-  p.log = function(msg) {
-    if(this.debug) this.element.innerHTML += msg + "<br/>";
-  }
+		var c = this.nextChunk(data, chunk);
+
+		while (c != 0) {
+			switch (c) {
+				case N_TRI_OBJECT:
+					this.resetPosition(data);
+					var mesh = this.readMesh(data);
+					this.meshes.push(mesh);
+					break;
+				default:
+					this.log("Unknown named object chunk: " + c.toString(16));
+					break;
+			}
+			c = this.nextChunk(data, chunk);
+		}
+
+		this.endChunk(chunk);
+	}
+
+	p.readChunk = function(data) {
+		var chunk = new Lib3dsChunk();
+		chunk.cur = this.position;
+		chunk.id = this.readWord(data);
+		chunk.size = this.readDWord(data);
+		chunk.end = chunk.cur + chunk.size;
+		chunk.cur += 6;
+		return chunk;
+	}
+
+	p.endChunk = function(chunk) {
+		this.position = chunk.end;
+	}
+
+	p.nextChunk = function(data, chunk) {
+		if (chunk.cur >= chunk.end) {
+			return 0;
+		}
+		this.position = chunk.cur;
+		try {
+			var next = this.readChunk(data);
+			chunk.cur += next.size;
+			return next.id;
+		} catch(e) {
+			this.log('Unable to read chunk at ' + this.position);
+			return 0;
+		}
+	}
+
+	p.resetPosition = function(data, chunk) {
+		this.position -= 6;
+	}
+
+	p.readByte = function(data) {
+		var v = data.getUint8(this.position);
+		this.position += 1;
+		return v;
+	}
+
+	p.readFloat = function(data) {
+		try {
+			var v = data.getFloat32(this.position);
+			this.position += 4;
+			return v;
+		} catch(e) {
+			this.log("" + e + " " + this.position + " " + data.byteLength);
+		}
+	}
+
+	p.readInt = function(data) {
+		var v = data.getInt32(this.position);
+		this.position += 4;
+		return v;
+	}
+
+	p.readShort = function(data) {
+		var v = data.getInt16(this.position);
+		this.position += 2;
+		return v;
+	}
+
+	p.readDWord = function(data) {
+		var v = data.getUint32(this.position);
+		this.position += 4;
+		return v;
+	}
+
+	p.readWord = function(data) {
+		var v = data.getUint16(this.position);
+		this.position += 2;
+		return v;
+	}
+
+	p.readString = function(data, maxLength) {
+		var s = "";
+		for(var i = 0; i < maxLength; i++) {
+			var c = this.readByte(data);
+			if( !c ) break;
+			s += String.fromCharCode(c);
+		}
+		return s;
+	}
+
+	p.log = function(msg) {
+		if(this.debug) {
+			console.log(msg);
+			if (this.element) {
+				this.element.innerHTML += msg + "<br/>";
+			}
+		}
+	}
 };
 
 Lib3dsChunk = function() {
-  this.cur = 0;
-  this.id = 0;
-  this.size = 0;
-  this.end = 0;
+	this.cur = 0;
+	this.id = 0;
+	this.size = 0;
+	this.end = 0;
 };
 
 Lib3dsFace = function() {
-  this.flags = 0;
-  this.points = [];
+	this.flags = 0;
+	this.points = [];
+	this.material = "";
 };
 
 Lib3dsMesh = function() {
-  this.next = null;
-  this.matrix = [1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1];
-  this.name = "";
-  this.color = 0;
-  this.points = 0;
-  this.pointL = [];
-  this.flags = 0;
-  this.flagL = [];
-  this.texels = 0;
-  this.texelL = [];
-  this.faces = 0;
-  this.faceL = [];
+	this.next = null;
+	this.matrix = [1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1];
+	this.name = "";
+	this.color = 0;
+	this.points = 0;
+	this.pointL = [];
+	this.flags = 0;
+	this.flagL = [];
+	this.texels = 0;
+	this.texelL = [];
+	this.faces = 0;
+	this.faceL = [];
 };
+
+Lib3dsMaterial = function() {
+	this.name = "";
+	this.ambientColor = 0;
+	this.diffuseColor = 0;
+	this.spectralColor = 0;
+};
+
