@@ -18,6 +18,8 @@ exports.staticRoutes = function(request, response) {
     templateName = 'body.about.ejs';
   } else if (reqPath == '/login') {
     templateName = 'body.login.ejs';
+  } else if (reqPath == '/render-3ds') {
+    templateName = 'body.render-3ds.ejs';
   }
 
   response.render(path.join(__dirname, '../', 'public/templates/', templateName));

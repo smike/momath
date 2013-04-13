@@ -1,0 +1,43 @@
+<!doctype html>
+
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+  <title>MoMath.</title>
+  <link href="/css/mo.css" media="all" rel="stylesheet" type="text/css"/>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <script src="/js/lib/jdataview.js"></script>
+  <script src="/js/lib/lib3ds.js"></script>
+  <script src="/js/lib/three.min.js"></script>
+  <script src="/js/lib/TrackballControls.js"></script>
+  <script src="/js/render-3ds.js"></script>
+  <style>
+    #container {
+      width: 100%;
+      height: 100%;
+      position: absolute;
+      background-color: rgb(0, 0, 0);
+    }
+    #loading-indicator {
+      color: white;
+      width: 100%;
+      text-align: center;
+      top: 50%;
+      position: absolute;
+    }
+  </style>
+</head>
+<body>
+<div id="container"><div id="loading-indicator">Loading...</div></div>
+<script>
+  // First character of has is #, get rid of it.
+  var url = "/api/content/exhibit-blob/" + window.location.hash.substr(1);
+  console.log(url);
+  console.log(window.location.hash);
+  render3ds(url, $('#container')[0], function(sceneContext) {
+      window.sceneContext = sceneContext;
+      $('#loading-indicator')[0].style.display = "none"
+  });
+</script>
+</body>
+</html>
