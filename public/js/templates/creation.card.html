@@ -3,7 +3,7 @@
     <span class="exhibit-name"><%= ExhibitName %></span>
     <div class="creation">
       <canvas id="<%= id %>"></canvas>
-      <% _.each(blobs, function(blob) { %>
+      Downloads: <% _.each(blobs, function(blob) { %>
         <a href="<%= blob.url%>"><%= blob.name%></a>
       <% }); %>
     </div>

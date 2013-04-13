@@ -15,6 +15,8 @@ var IMAGE_MIME_TYPES = {
   'jpeg': 'image/jpeg'
 };
 
+var EXTENSION_3DS = '3ds';
+
 /** Renders a card view of a creation. */
 window.CreationCardView = Backbone.View.extend({
   initialize : function() {
@@ -31,6 +33,20 @@ window.CreationCardView = Backbone.View.extend({
   },
 
   render : function(wrapper, creation) {
+    switch (creation.exhibitId) {
+      case "HUTR.OD":
+      case "POPA.OD":
+      case "TIFA.OD":
+      case "HUTR.OD":
+      case "MTHN.OD":
+        this.renderMTHN(wrapper, creation);
+        break;
+      default:
+        console.error("Unknown exhibit: " + creation.exhibitId);
+    }
+  },
+
+  renderMTHN : function(wrapper, creation) {
     var imageUrl = null;
     _.find(creation.getBlobIds(), function(blobId) {
       var extension = blobId.substr(blobId.lastIndexOf(".") + 1);
@@ -40,11 +56,20 @@ window.CreationCardView = Backbone.View.extend({
         return true;
       }
     }, this);
+    var blob_3ds = null;
     var attrs = {
       ExhibitName: creation.attributes.ExhibitBlobList.ExhibitID,
       blobs: _.map(creation.getBlobIds(), function(blobId) {
+        var extension = blobId.substr(blobId.lastIndexOf(".") + 1);
+        var blobName = blobId;
+        if (IMAGE_MIME_TYPES.hasOwnProperty(extension)) {
+          blobName = "Image";
+        } else if (EXTENSION_3DS == extension) {
+          blobName = "3D Model";
+          blob_3ds = blobId;
+        }
         return {
-          name: blobId,
+          name: blobName,
           url: this.getBlobUrl_(creation, blobId)
         };
       }, this),
@@ -54,6 +79,17 @@ window.CreationCardView = Backbone.View.extend({
     cropImageData(imageUrl, $(this.el).find('canvas')[0], 10, 10);
 
     wrapper.appendChild(this.el);
+
+    if (blob_3ds) {
+      var renderUrl = "/render-3ds#" + [creation.exhibitId, creation.visitId, blob_3ds].join('/');
+      $(this.el).find('canvas').colorbox({
+        // Using the native iframe view doesn't work quite well: the iframe
+        // doesn't take up the whole lightbox.
+        html: '<iframe style="width: 100%; height:100%;" src="'+renderUrl+'"></iframe>',
+        innerWidth: "80%",
+        height: "80%",
+      });
+    }
   }
 });
 
