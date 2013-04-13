@@ -1,5 +1,5 @@
 // Checks if data is composed of repetitions of slice.
-function isRepeated(slice, data) {
+function _isRepeated(slice, data) {
   var d_len = data.length;
   var s_len = slice.length;
 
@@ -20,7 +20,7 @@ function isRepeated(slice, data) {
   return true;
 }
 
-function getForegroundBounds(context, width, height) {
+function _getForegroundBounds(context, width, height) {
   // each pixel is a 4-element array: [r, g, b, a]
   var bg_color = context.getImageData(0, 0, 1, 1).data;
 
@@ -32,28 +32,28 @@ function getForegroundBounds(context, width, height) {
   // different color assume that's the beginning of a "foreground".
   for (var x = 0; x < width; x++) {
     var pixelCol = context.getImageData(x, 0, 1, height).data;
-    if (!isRepeated(bg_color, pixelCol)) {
+    if (!_isRepeated(bg_color, pixelCol)) {
       bounds.left = x;
       break;
     }
   }
   for (var x = width - 1; x >= 0; x--) {
     var pixelCol = context.getImageData(x, 0, 1, height).data;
-    if (!isRepeated(bg_color, pixelCol)) {
+    if (!_isRepeated(bg_color, pixelCol)) {
       bounds.right = x;
       break;
     }
   }
   for (var y = 0; y < height; y++) {
     var pixelRow = context.getImageData(bounds.left, y, bounds.right - bounds.left, 1).data;
-    if (!isRepeated(bg_color, pixelRow)) {
+    if (!_isRepeated(bg_color, pixelRow)) {
       bounds.top = y;
       break;
     }
   }
   for (var y = height - 1; y >= 0; y--) {
     var pixelRow = context.getImageData(bounds.left, y, bounds.right - bounds.left, 1).data;
-    if (!isRepeated(bg_color, pixelRow)) {
+    if (!_isRepeated(bg_color, pixelRow)) {
       bounds.bottom = y;
       break;
     }
@@ -75,7 +75,7 @@ function cropImageData(imageUrl, outputCanvas, paddingX, paddingY) {
     var context = outputCanvas.getContext('2d');
     context.drawImage(img, 0, 0);
 
-    var bounds = getForegroundBounds(context, img.width, img.height);
+    var bounds = _getForegroundBounds(context, img.width, img.height);
 
     // add padding to the cropped image.
     bounds.left = Math.max(bounds.left - paddingX, 0);
