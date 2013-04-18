@@ -10,7 +10,7 @@ div#wrapper div.header {
   background-color: #fff;
   border-bottom: 3px solid #999;
   margin-bottom: 8px;
-  overflow: auto;
+  overflow: hidden;
 
   position: fixed;
   z-index: 100;
