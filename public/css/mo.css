@@ -3,30 +3,30 @@ html,
 body {
   padding: 0;
   margin: 0;
-}
-
-div#wrapper {
+  font-family: "lucida grande", tahoma, verdana, arial, sans-serif;
 }
 
 div#wrapper div.header {
-  background-color: #e9e9e9;
+  background-color: #fff;
   border-bottom: 3px solid #999;
   margin-bottom: 8px;
   overflow: auto;
 
   position: fixed;
+  z-index: 100;
   top: 0;
-  height: 48px;
+  height: 64px;
   width: 100%;
 }
 
 div#wrapper div.header div.inner {
   margin: 8px 16px;
+  overflow: auto;
 }
 
 div#wrapper div.header div.logo {
   float: left;
-  font-size: 25px;
+  font-size: 26px;
 }
 
 div#wrapper div.header div.logo a {
@@ -36,9 +36,12 @@ div#wrapper div.header div.logo a {
 
 div#wrapper div.header div.nav {
   float: right;
-  display: inline-block;
+  margin-top: 12px;
 }
 
+.creation-card .back div.downloads a,
+.creation-card .back div.downloads a:hover,
+.creation-card .back div.downloads a:visited,
 div#wrapper div.header div.nav a,
 div#wrapper div.header div.nav a:hover,
 div#wrapper div.header div.nav a:visited {
@@ -49,7 +52,7 @@ div#wrapper div.header div.nav a:visited {
 }
 
 div#wrapper div.content-body {
-  margin-top: 48px;
+  margin-top: 64px;
   padding: 16px 16px 48px;
   overflow: auto;
 }
@@ -58,7 +61,7 @@ div#wrapper div.footer {
   border-top: 3px solid #999;
   padding-top: 8px;
   margin-top: 8px;
-  background-color: #e9e9e9;
+  background-color: #fff;
 
   position: fixed;
   bottom: 0;
@@ -70,23 +73,27 @@ div#wrapper div.footer .inner {
   margin: 4px 16px;
 }
 
-/*** PROFILE, CARDS, CREATIONS ***/
+/*** GENERIC CARDS ***/
 
+.flip-card,
 .creation-card,
 .card {
-  border: 1px solid #999;
-  height: 256px;
-  width: 192px;
-  margin-right: 8px;
-  margin-bottom: 8px;
   float: left;
+  margin-right: 16px;
+  margin-bottom: 16px;
+
+  background-color: #fff;
+  position: relative;
+  height: 250px;
+  width: 192px;
+
+  -webkit-perspective: 600px;
+  -moz-perspective: 600px;
 }
 
-.creation-card canvas {
-  border: 1px solid #999;
-  width: 100%;
-  margin-right: 8px;
-  margin-bottom: 8px;
+body,
+.flip-card {
+  background-color: #e9e9e9;
 }
 
 .card .inner {
@@ -96,27 +103,140 @@ div#wrapper div.footer .inner {
 .card .inner h3 {
   width: 100%;
   padding: 0;
-  margin: 0;
+  margin: 0 0 8px 0;
   background-color: #fff;
 }
+
+.card,
+.flip-card .front,
+.flip-card.flip .back {
+  -moz-box-shadow: 0 1px 5px rgba(0,0,0,0.9);
+  -webkit-box-shadow: 0 1px 5px rgba(0,0,0,0.9);
+  box-shadow: 0 1px 5px rgba(0,0,0,0.9);
+}
+
+.flip-card .front {
+  float: none;
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 900;
+  width: inherit;
+  height: inherit;
+
+  -webkit-transform: rotateX(0deg) rotateY(0deg);
+  -webkit-transform-style: preserve-3d;
+  -webkit-backface-visibility: hidden;
+
+  -moz-transform: rotateX(0deg) rotateY(0deg);
+  -moz-transform-style: preserve-3d;
+  -moz-backface-visibility: hidden;
+
+  -o-transition: all .4s ease-in-out;
+  -ms-transition: all .4s ease-in-out;
+  -moz-transition: all .4s ease-in-out;
+  -webkit-transition: all .4s ease-in-out;
+  transition: all .4s ease-in-out;
+}
+
+.flip-card.flip .front {
+  z-index: 900;
+
+  -webkit-transform: rotateY(180deg);
+  -moz-transform: rotateY(180deg);
+}
+
+.flip-card .back {
+  float: none;
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 800;
+  width: inherit;
+  height: inherit;
+  
+  -webkit-transform: rotateY(-180deg);
+  -webkit-transform-style: preserve-3d;
+  -webkit-backface-visibility: hidden;
+
+  -moz-transform: rotateY(-180deg);
+  -moz-transform-style: preserve-3d;
+  -moz-backface-visibility: hidden;
+
+  -o-transition: all .4s ease-in-out;
+  -ms-transition: all .4s ease-in-out;
+  -moz-transition: all .4s ease-in-out;
+  -webkit-transition: all .4s ease-in-out;
+  transition: all .4s ease-in-out;
+}
+
+.flip-card.flip .back {
+  z-index: 1000;
+  -webkit-transform: rotateX(0deg) rotateY(0deg);
+  -moz-transform: rotateX(0deg) rotateY(0deg);
+}
+
+.flip-card span.info,
+.flip-card span.return {
+  cursor: pointer;
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  
+  display: inline-block;
+  background-color: #e9e9e9;
+  border-radius: 19px;
+  font-size: 15px;
+}
+
+.flip-card span.info {
+  padding-left: 14px;
+  padding-top: 8px;
+  width: 18px;
+  height: 24px;
+}
+
+.flip-card span.return {
+  padding-left: 8px;
+  padding-top: 6px;
+  width: 24px;
+  height: 24px;
+}
+
+.flip-card span.info:hover,
+.flip-card span.return:hover {
+  background-color: #999;
+  color: #e9e9e9;
+}
+
+/*** SPECIFIC CARDS ***/
 
 div#user-card span {
   display: block;
   font-size: 17px;
 }
 
-div#visit-overview {}
+div#user-card span.user-email {
+  font-size: 13px;
+  font-weight: normal;
+}
+
+div#user-card span.visit-count {
+  margin: 32px auto 0 auto;
+  font-size: 32px;
+  text-align: center;
+}
 
 div#visit-overview ul {
   list-style: none;
   padding: 0;
   margin: 0;
   overflow-y: scroll;
-  height: 194px;
+  height: 214px;
 }
 
 div#visit-overview ul li {
-  font-size: 13px;
+  font-size: 11px;
   color: #333;
   padding: 2px 0px 2px 0px;
   border-bottom: 1px solid #999;
@@ -131,23 +251,83 @@ div#visit-overview ul li:hover {
   background-color: #e9e9e9;
 }
 
-div#creations-wrapper {
-  clear: both;
-  overflow: auto;
+/*** DATE CARD ***/
+
+#creations-wrapper .collection-wrapper .date-card {
+  cursor: pointer;
 }
 
-div#creations-wrapper .collection-wrapper {
-  clear: both;
+#creations-wrapper .collection-wrapper .date-card .front,
+#creations-wrapper .collection-wrapper .date-card .back {
+  background-color: #00b088;
 }
 
-div#creations-wrapper .collection-wrapper h3 {
-  border-top: 4px solid #999;
-  margin: 8px 0 8px 0;
-  padding: 8px 0;
+.date-card .front .inner {
+  margin: 8px;
+  text-align: left;
 }
 
-div#creations-wrapper .collection-wrapper .creation-card {
-
+.date-card .front span {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 24px;
 }
 
+.date-card .front span.month {
+  font-size: 24px;
+}
 
+#creations-wrapper .collection-wrapper .date-card .back {
+  text-align: center;
+}
+
+#creations-wrapper .collection-wrapper .date-card .back span.count {
+  display: inline-block;
+  font-size: 122px;
+  text-align: center;
+}
+
+/*** CREATION CARD ***/
+
+#creations-wrapper .collection-wrapper .creation-card .front,
+#creations-wrapper .collection-wrapper .creation-card .back {
+  background-color: #d49911;
+}
+
+.creation-card .creation {
+  padding: 4px;
+}
+
+.creation-card .creation canvas {
+  border: 1px solid #999;
+  width: 180px;
+  margin-right: 8px;
+  margin-bottom: 8px;
+}
+
+.creation-card .back .inner {
+  padding: 4px;
+  font-size: 15px;
+}
+
+.creation-card .back div.downloads {
+  margin-top: 4px;
+}
+
+.creation-card .back div.downloads span,
+.creation-card .back div.downloads a {
+  display: block;
+}
+
+.creation-card .back div.downloads a,
+.creation-card .back div.downloads a:hover,
+.creation-card .back div.downloads a:visited {
+  font-size: 13px;
+  margin-left: 8px;
+}
+
+/*** MODAL DIALOGS ***/
+
+div#colorbox {
+  outline: 0;
+}
