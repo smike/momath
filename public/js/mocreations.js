@@ -233,5 +233,3 @@ CreationManager.prototype.renderCreations = function(visit, creations) {
   this.creationCollectionViews[visitId] = creationCollectionView;
   this.visitHistoryView.setVisitLoaded(visit);
 };
-
-// CreationManager.prototype.blah = function() {};
