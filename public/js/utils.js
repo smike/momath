@@ -30,3 +30,35 @@ tpl = {
     return this.templates[name];
   }
 };
+
+
+/** Logs the provided message. */
+function log(message) {
+  if (DEBUG) {
+    try {
+      console.log(message);
+    } catch (err) {
+      // No-op.
+    }
+  }
+}
+
+
+/** Formats an epoch date string to either the default format or the provided one. */
+function formatEpochDateTime(dateEpochString, format) {
+  if (!format) {
+    format = DEFAULT_DATE_FORMAT;
+  }
+
+  return $.format.date(new Date(parseInt(dateEpochString, 10)).toString(), format);
+}
+
+
+/** Formats a java date string to either the default format or the provided one. */
+function formatDateTime(dateString, format) {
+  if (!format) {
+    format = DEFAULT_DATE_FORMAT;
+  }
+
+  return $.format.date(new Date(dateString).toString(), format);
+}

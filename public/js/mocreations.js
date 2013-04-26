@@ -85,7 +85,7 @@ window.CreationCardView = Backbone.View.extend({
       $(this.el).find('canvas').colorbox({
         // Using the native iframe view doesn't work quite well: the iframe
         // doesn't take up the whole lightbox.
-        html: '<iframe style="width: 100%; height:100%;" src="'+renderUrl+'"></iframe>',
+        html: '<iframe style="width: 100%; height:100%;" src="' + renderUrl + '"></iframe>',
         innerWidth: "80%",
         height: "80%",
       });
@@ -108,17 +108,34 @@ window.CreationCollectionView = Backbone.View.extend({
   },
 
   render : function(visit, creations) {
+    var creationCount = 0;
+    _.each(creations, function(creation) {
+      creationCount++;
+    });
+
+    var timestamp = new Date(visit.attributes.AssignedAt).toString();
     var visitInfo = {
-      FormattedAssignedAt : formatDateTime(visit.attributes.AssignedAt)
+      VisitMonth : $.format.date(timestamp, 'MMMM'),
+      VisitDay: $.format.date(timestamp, 'd'),
+      VisitYear: $.format.date(timestamp, 'yyyy'),
+      FormattedAssignedAt : formatDateTime(visit.attributes.AssignedAt),
+      CreationCount : creationCount
     };
 
     this.el = $(this.template(visitInfo))[0];
     this.wrapperEl.appendChild(this.el);
-    var creationWrapper = $(this.el).find('.creations')[0];
+    var creationWrapper = $(this.el)[0];
     _.each(creations, function(creation) {
-
       var creationCard = new CreationCardView({});
       creationCard.render(creationWrapper, creation);
+    });
+
+    // Adds flip effect.
+    $(this.el).find('.flip-card').bind('click', function(event) {
+      if (event.target.tagName == "CANVAS") {
+        return;
+      }
+      $(this).toggleClass('flip')
     });
   }
 });
@@ -216,5 +233,3 @@ CreationManager.prototype.renderCreations = function(visit, creations) {
   this.creationCollectionViews[visitId] = creationCollectionView;
   this.visitHistoryView.setVisitLoaded(visit);
 };
-
-// CreationManager.prototype.blah = function() {};

@@ -1,13 +1,20 @@
-<div class="creation-card">
+<div class="creation-card flip-card">
   <div class="front">
-    <span class="exhibit-name"><%= ExhibitName %></span>
     <div class="creation">
       <canvas id="<%= id %>"></canvas>
-      Downloads: <% _.each(blobs, function(blob) { %>
-        <a href="<%= blob.url%>"><%= blob.name%></a>
-      <% }); %>
+      <span class="info">i</span>
     </div>
   </div>
   <div class="back">
+    <div class="inner">
+      <div class="exhibit-name">Exhibit Code: <%= ExhibitName %></div>
+      <div class="downloads">
+        <span class="download-header">Downloads:</span>
+         <% _.each(blobs, function(blob) { %>
+          <a href="<%= blob.url%>"><%= blob.name%></a>
+        <% }); %>
+      </div>
+      <span class="return">←</span>
+    </div>
   </div>
 </div>

@@ -1,4 +1,13 @@
-<div class="collection-wrapper">
-  <h3>Creations from <%= FormattedAssignedAt %></h3>
-  <div class="creations"></div>
-</div>
+<span class="collection-wrapper creations">
+  <div class="date-card flip-card">
+    <div class="front">
+      <div class="inner">
+        <span class="month"><%= VisitMonth %> <%= VisitDay %></span>
+        <span class="year"><%= VisitYear %></span>
+      </div>
+    </div>
+    <div class="back">
+      <span class="count"><%= CreationCount %></span><span class="label">creations</span>
+    </div>
+  </div>
+</span>
