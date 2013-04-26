@@ -10,24 +10,13 @@ var API_HOST = 'api.momath.org';
 var API_BASE_PATH = '/api/v1/';
 var API_KEY = '2d6e7269-f701-4ae7-8494-afa25808f6ec';
 
-var CONTENT_SVC_PATH = API_BASE_PATH + 'content.svc/';
-
 var _DEBUG_JSON_POST_KEY = '__DEBUG_JSON__';
 
-var _CreateMethodPath = function(svcPath, method, args, queryArgs) {
-  if (args.length > 0) {
-    // We want a slash between the method and args if they exist.
-    args = [''].concat(args);
-  }
-
+var _CreatePath = function(svcPath, method, args, queryArgs) {
   queryArgs.tok = API_KEY;
 
-  return svcPath + method + args.join('/') + '?' +
+  return API_BASE_PATH + ([svcPath, method].concat(args)).join('/') + '?' +
       querystring.stringify(queryArgs);
-};
-
-var CreateContentSvcPath = function(method, args, queryArgs) {
-  return _CreateMethodPath(CONTENT_SVC_PATH, method, args, queryArgs);
 };
 
 var _PushIfDefined = function(a, value) {
@@ -72,12 +61,13 @@ var _SendRequest = function(path, body, responseCallback) {
   req.end();
 };
 
-exports.content = function(request, response) {
+exports.api = function(request, response) {
   var args = [];
   _PushIfDefined(args, request.params.arg1);
   _PushIfDefined(args, request.params.arg2);
   _PushIfDefined(args, request.params.arg3);
-  var path = CreateContentSvcPath(request.params.method, args, request.query);
+  var path = _CreatePath(request.params.svc, request.params.method,
+                         args, request.query);
 
   var json = request.body;
   if (json.hasOwnProperty(_DEBUG_JSON_POST_KEY)) {
