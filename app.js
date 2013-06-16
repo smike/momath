@@ -22,8 +22,8 @@ app.configure(function(){
   app.use(express.static(__dirname + '/public'));
 
   // API Requests
-  app.get('/api/:svc/:method/:arg1?/:arg2?/:arg3?', api.api);
-  app.post('/api/:svc/:method/:arg1?/:arg2?/:arg3?', api.api);
+  app.get('/api/:svc/:method/:arg1?/:arg2?/:arg3?', api.proxy);
+  app.post('/api/:svc/:method/:arg1?/:arg2?/:arg3?', api.proxy);
 
   app.use('/', momath.staticRoutes);
 });
