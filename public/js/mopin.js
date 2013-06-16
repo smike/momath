@@ -130,7 +130,9 @@ var AppRouter = Backbone.Router.extend({
     creation.fetch({
       success : _.bind(function (fetchedCreation) {
         console.log(fetchedCreation);
-        var creationCard = new CreationCardView({});
+        var creationCard = new CreationCardView({
+          modalRender : false
+        });
         creationCard.render($('#content')[0], fetchedCreation);
       }, this)
     });
