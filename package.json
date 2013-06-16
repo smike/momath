@@ -12,7 +12,7 @@
   "dependencies": {
     "ejs" : ">=0.4.3",
     "express": "3.1.0",
-    "jade": "*",
+    "nodemailer": ">=0.4.4",
     "xml2json": "*"
   }
 }
