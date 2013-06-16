@@ -19,8 +19,11 @@ var EXTENSION_3DS = '3ds';
 
 /** Renders a card view of a creation. */
 window.CreationCardView = Backbone.View.extend({
-  initialize : function() {
+  modalRender : true,
+
+  initialize : function(attrs) {
     this.template = _.template(tpl.get('creation.card'));
+    this.modalRender = attrs.modalRender;
   },
 
   getBlobUrl_ : function(creation, blobId, mimeType) {
@@ -30,6 +33,10 @@ window.CreationCardView = Backbone.View.extend({
       url += "?type=" + mimeType;
     }
     return url;
+  },
+
+  getCreationPermaLink : function(creation) {
+    return '/#creation/' + creation.exhibitId + "/" + creation.visitId;
   },
 
   render : function(wrapper, creation) {
@@ -44,6 +51,14 @@ window.CreationCardView = Backbone.View.extend({
       default:
         console.error("Unknown exhibit: " + creation.exhibitId);
     }
+
+    // Adds flip effect.
+    $(this.el).bind('click', function(event) {
+      if (event.target.tagName == "CANVAS") {
+        return;
+      }
+      $(this).toggleClass('flip')
+    });
   },
 
   renderMTHN : function(wrapper, creation) {
@@ -59,6 +74,7 @@ window.CreationCardView = Backbone.View.extend({
     var blob_3ds = null;
     var attrs = {
       ExhibitName: creation.attributes.ExhibitBlobList.ExhibitID,
+      creationPageUrl : this.getCreationPermaLink(creation),
       blobs: _.map(creation.getBlobIds(), function(blobId) {
         var extension = blobId.substr(blobId.lastIndexOf(".") + 1);
         var blobName = blobId;
@@ -82,15 +98,36 @@ window.CreationCardView = Backbone.View.extend({
 
     if (blob_3ds) {
       var renderUrl = "/render-3ds#" + [creation.exhibitId, creation.visitId, blob_3ds].join('/');
-      $(this.el).find('canvas').colorbox({
-        // Using the native iframe view doesn't work quite well: the iframe
-        // doesn't take up the whole lightbox.
-        html: '<iframe style="width: 100%; height:100%;" src="' + renderUrl + '"></iframe>',
-        innerWidth: "80%",
-        height: "80%",
-      });
+      var iframed3DModelSnippet = '<iframe style="width: 100%; height:100%;" src="' + renderUrl + '"></iframe>';
+
+      if (this.modalRender) {
+        $(this.el).find('canvas').colorbox({
+          // Using the native iframe view doesn't work quite well: the iframe
+          // doesn't take up the whole lightbox.
+          html: iframed3DModelSnippet,
+          innerWidth: "80%",
+          height: "80%",
+        });
+        $(this.el).find('.icon-fullscreen').bind('click', _.bind(function(event) {
+          $(this.el).find('canvas').click();
+          return false;
+        }, this));
+      } else {
+        $(this.el).find('canvas').bind('click', _.bind(this.render3DModelInline, this, wrapper, iframed3DModelSnippet));
+        $(this.el).find('.icon-fullscreen').bind('click', _.bind(this.render3DModelInline, this, wrapper, iframed3DModelSnippet));
+      }
     }
-  }
+  },
+
+  render3DModelInline : function(wrapper, iframed3DModelSnippet) {
+    $(this.el).addClass('hidden');
+
+    var height = $(window).height() - 144;
+
+    var el = $('<div id="inline-model-wrapper">' + iframed3DModelSnippet + '</div>')[0];
+    $(el).height(height + 'px');
+    wrapper.appendChild(el);
+  }  
 });
 
 /*** Renders a collection of creations for a given date. */
@@ -126,12 +163,14 @@ window.CreationCollectionView = Backbone.View.extend({
     this.wrapperEl.appendChild(this.el);
     var creationWrapper = $(this.el)[0];
     _.each(creations, function(creation) {
-      var creationCard = new CreationCardView({});
+      var creationCard = new CreationCardView({
+        modalRender : true
+      });
       creationCard.render(creationWrapper, creation);
     });
 
-    // Adds flip effect.
-    $(this.el).find('.flip-card').bind('click', function(event) {
+    // Adds flip effect to date cards.
+    $(this.el).find('.date-card').bind('click', function(event) {
       if (event.target.tagName == "CANVAS") {
         return;
       }

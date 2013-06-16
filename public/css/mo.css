@@ -1,4 +1,10 @@
 
+.hidden {
+  display: none;
+  visibility: hidden;
+}
+
+
 html,
 body {
   padding: 0;
@@ -51,10 +57,20 @@ div#wrapper div.header div.nav a:visited {
   color: #333;
 }
 
+.creation-card .back .creation-link {
+  position: absolute;
+  bottom: 12px;
+  left: 12px;
+  color: #333;
+  font-size: 19px;
+  cursor: pointer;
+}
+
 div#wrapper div.content-body {
   margin-top: 64px;
   padding: 16px 16px 48px;
   overflow: auto;
+  height: 100%;
 }
 
 div#wrapper div.footer {
@@ -71,6 +87,11 @@ div#wrapper div.footer {
 
 div#wrapper div.footer .inner {
   margin: 4px 16px;
+}
+
+div#wrapper div.footer .inner a {
+  text-decoration: none;
+  color: #333;
 }
 
 /*** GENERIC CARDS ***/
@@ -289,8 +310,8 @@ div#visit-overview ul li:hover {
 
 /*** CREATION CARD ***/
 
-#creations-wrapper .collection-wrapper .creation-card .front,
-#creations-wrapper .collection-wrapper .creation-card .back {
+.creation-card .front,
+.creation-card .back {
   background-color: #d49911;
 }
 
@@ -303,6 +324,14 @@ div#visit-overview ul li:hover {
   width: 180px;
   margin-right: 8px;
   margin-bottom: 8px;
+  cursor: pointer;
+}
+
+.creation-card .creation img.icon-fullscreen {
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  width: 24px;
 }
 
 .creation-card .back .inner {
@@ -330,4 +359,14 @@ div#visit-overview ul li:hover {
 
 div#colorbox {
   outline: 0;
+}
+
+div#inline-model-wrapper {
+  height: 100%;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+div#inline-model-wrapper iframe {
+  border: 3px solid #999;
 }

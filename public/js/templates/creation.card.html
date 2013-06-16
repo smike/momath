@@ -2,6 +2,7 @@
   <div class="front">
     <div class="creation">
       <canvas id="<%= id %>"></canvas>
+      <img src="/img/icon.fullscreen.jpg" class="icon-fullscreen" />
       <span class="info">i</span>
     </div>
   </div>
@@ -14,6 +15,7 @@
           <a href="<%= blob.url%>"><%= blob.name%></a>
         <% }); %>
       </div>
+      <a href="<%= creationPageUrl %>" class="creation-link">Link</a>
       <span class="return">←</span>
     </div>
   </div>
