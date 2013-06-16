@@ -96,7 +96,8 @@ window.VisitHistoryView = Backbone.View.extend({
 var AppRouter = Backbone.Router.extend({
   routes : {
     "" : "renderMain",
-    "user/:id" : "lookupUserAndRenderCreationBoard"
+    "user/:id" : "lookupUserAndRenderCreationBoard",
+    "creation/:exhibitId/:visitId" : "lookupAndRenderCreation"
   },
 
   renderMain : function() {
@@ -114,6 +115,42 @@ var AppRouter = Backbone.Router.extend({
       console.log("person id for " + email + ": " + person_id);
       callback(person_id);
     });
+  },
+
+  lookupAndRenderCreation : function(exhibitId, visitId) {
+    console.log("Exhibit: " + exhibitId + ", Visit: " + visitId);
+    
+    // Clears the content body.
+    $('#content').html('');
+
+    var creation = new Creation({
+      exhibitId : exhibitId,
+      visitId : visitId
+    });
+    creation.fetch({
+      success : _.bind(function (fetchedCreation) {
+        console.log(fetchedCreation);
+        var creationCard = new CreationCardView({});
+        creationCard.render($('#content')[0], fetchedCreation);
+      }, this)
+    });
+
+    /*
+    $.get('/api/content/exhibit-blob-list/' + exhibit_id + '/' + visit_id, function(blobs_json) {
+            var exhibit_bob_list = blobs_json.ExhibitBlobList;
+            var blobs = exhibit_bob_list["Blob"]; // May be missing if no blobs
+            if (blobs) {
+              // A single entry looks doesn't end up in an array in the json.
+              blobs = $.isArray(blobs) ? blobs : [blobs];
+              var blob_ids = [];
+              for (var j in blobs) {
+                var blob_id = blobs[j].ID;
+                blob_ids.push(blob_id);
+              }
+              log('blobs found at ' + exhibit_bob_list.ExhibitID + ' for ' + visit_id + ': ' + blob_ids);
+              callback(visit_id, exhibit_bob_list.ExhibitID, blob_ids);
+            }
+          });*/
   },
 
   lookupUserAndRenderCreationBoard : function(id) {
